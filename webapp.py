@@ -67,8 +67,13 @@ def train_lstm_model(data):
     return lstm, scaler
 
 def main():
+    st.set_page_config(
+    page_title="Stockify!",
+    page_icon=":chart_with_upwards_trend:",
+    )
     st.write("""
-    # Stock Prediction Model using LSTM
+    # Stockify! :chart_with_upwards_trend:
+    ### Stock Prediction Model using LSTM
 
     This app uses an LSTM (Long Short-Term Memory) model to predict stock prices based on historical data. 
     You can enter the stock symbol, start date, and end date to analyze the historical stock data and make predictions.
@@ -86,36 +91,74 @@ def main():
     end_date = st.date_input('Select the end date:')
 
     if stock_symbol and start_date and end_date:
-        if stock_symbol!='AAPL':
-            st.subheader('Prediction Model is currently only supported for AAPL stock. Please select AAPL from the dropdown.')
+        loaded_model = load_model(f'./models/{stock_symbol}_model.h5')
+        scaler = joblib.load(f'./models/{stock_symbol}_scaler.joblib')
+
+        stock_data = yf.Ticker(stock_symbol)
+        latest_data = stock_data.history(period='1d')
+        openp = latest_data['Open'][0]
+        scaledopenp = scaler.fit_transform([[openp]])
+        scaledopenp = scaledopenp.reshape(1, 1, scaledopenp.shape[1])
+        expectedclosep = loaded_model.predict(scaledopenp)
+        expectedclosep = scaler.inverse_transform(expectedclosep)
+
+        st.subheader('Model Prediction')
+        action_text = '<div style="text-align:center; margin-top: 1px;font-size:24px">'
+        if expectedclosep[0, 0] > openp:
+            action_text += f'''<strong>Latest Stock Price for {stock_symbol}:</strong> ${openp:.2f}<br>
+                <strong>Predicted Close Price for {stock_symbol}:</strong> ${expectedclosep[0, 0]:.2f}<br>
+            <span style="color:green">Go Long (Buy)</span>'''
         else:
-            loaded_model = load_model(f'./models/{stock_symbol}_model.h5')
-            scaler = joblib.load(f'./models/{stock_symbol}_scaler.joblib')
+            action_text += f'''<strong>Latest Stock Price for {stock_symbol}:</strong> ${openp:.2f}<br>
+                <strong>Predicted Close Price for {stock_symbol}:</strong> ${expectedclosep[0, 0]:.2f}<br>
+            <span style="color:red">Go Short (Sell)</span>'''
+        action_text += '</div>'
 
-            stock_data = yf.Ticker(stock_symbol)
-            latest_data = stock_data.history(period='1d')
-            openp = latest_data['Open'][0]
-            scaledopenp = scaler.fit_transform([[openp]])
-            scaledopenp = scaledopenp.reshape(1, 1, scaledopenp.shape[1])
-            expectedclosep = loaded_model.predict(scaledopenp)
-            expectedclosep = scaler.inverse_transform(expectedclosep)
+        st.markdown(
+            f'<div style="border: 2px solid #4CAF50; border-radius: 10px; padding: 15px;">{action_text}</div>',
+            unsafe_allow_html=True
+        )
 
-            st.subheader('Model Prediction')
-            action_text = '<div style="text-align:center; margin-top: 1px;font-size:24px">'
-            if expectedclosep[0, 0] > openp:
-                action_text += f'''<strong>Latest Stock Price for {stock_symbol}:</strong> ${openp:.2f}<br>
-                    <strong>Predicted Close Price for {stock_symbol}:</strong> ${expectedclosep[0, 0]:.2f}<br>
-                <span style="color:green">Go Long (Buy)</span>'''
-            else:
-                action_text += f'''<strong>Latest Stock Price for {stock_symbol}:</strong> ${openp:.2f}<br>
-                    <strong>Predicted Close Price for {stock_symbol}:</strong> ${expectedclosep[0, 0]:.2f}<br>
-                <span style="color:red">Go Short (Sell)</span>'''
-            action_text += '</div>'
-
-            st.markdown(
-                f'<div style="border: 2px solid #4CAF50; border-radius: 10px; padding: 15px;">{action_text}</div>',
-                unsafe_allow_html=True
-            )
+        tradingview_widget = """
+            <!-- TradingView Widget BEGIN -->
+            <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+            {
+            "symbols": [
+                {
+                "description": "",
+                "proName": "NASDAQ:AAPL"
+                },
+                {
+                "description": "",
+                "proName": "NASDAQ:MSFT"
+                },
+                {
+                "description": "",
+                "proName": "NASDAQ:GOOGL"
+                },
+                {
+                "description": "",
+                "proName": "NASDAQ:AMZN"
+                },
+                {
+                "description": "",
+                "proName": "NASDAQ:META"
+                }
+            ],
+            "showSymbolLogo": true,
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "displayMode": "adaptive",
+            "locale": "en"
+            }
+            </script>
+            </div>
+            <!-- TradingView Widget END -->
+        """
+        st.components.v1.html(tradingview_widget)
 
         stock_data = yf.Ticker(stock_symbol)
         latest_data = stock_data.history(period='1d')
