@@ -88,9 +88,9 @@ def main():
         if stock_symbol!='AAPL':
             st.subheader('Prediction Model is currently only supported for AAPL stock. Please select AAPL from the dropdown.')
         else:
-            loaded_model = load_model(f'models/{stock_symbol}_model.keras')
+            loaded_model = load_model(f'./models/{stock_symbol}_model.keras')
             
-            scaler = joblib.load(f'models/{stock_symbol}_scaler.joblib')
+            scaler = joblib.load(f'./models/{stock_symbol}_scaler.joblib')
 
             stock_data = yf.Ticker(stock_symbol)
             latest_data = stock_data.history(period='1d')
