@@ -19,6 +19,7 @@ from keras.models import load_model
 from datetime import datetime, timedelta
 import joblib
 from tensorflow.keras.utils import plot_model
+from tensorflow.keras.models import load_model
 
 def get_stock_data(stock_symbol, start_date, end_date):
     data = yf.download(stock_symbol, start=start_date, end=end_date)
@@ -88,8 +89,7 @@ def main():
         if stock_symbol!='AAPL':
             st.subheader('Prediction Model is currently only supported for AAPL stock. Please select AAPL from the dropdown.')
         else:
-            loaded_model = load_model(f'./models/{stock_symbol}_model.keras')
-            
+            loaded_model = load_model(f'./models/{stock_symbol}_model.h5')
             scaler = joblib.load(f'./models/{stock_symbol}_scaler.joblib')
 
             stock_data = yf.Ticker(stock_symbol)
